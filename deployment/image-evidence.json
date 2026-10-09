@@ -1,0 +1,28 @@
+{
+  "checked_at": "2026-10-09",
+  "glm_sif": {
+    "filename": "vllm-backport-v0.13.1-sm80-local.sif",
+    "size_bytes": 7738228736,
+    "sha256": "5b9e3923f4ed04a9eedb1296062c3953d471a369950f95a58dff5e2e2a30253f",
+    "scope": "Current local artifact; not recorded for each historical benchmark."
+  },
+  "sm80_archive": {
+    "tag": "lazymio/vllm-backport:v0.13.1-sm80",
+    "index_digest": "sha256:0fc33cd7d2be777bf6faaee9b02adf781dc6d0bc44b9a09ce4865089f67e9cba",
+    "linux_amd64_manifest_digest": "sha256:8094fcbab905a04a480b327f2761255e3d17cd8d39470cac9d76450bbb567f7e",
+    "docker_config_id": "sha256:671aa3aadb9e536a89ecda894d93eb15870a4bd5c1d24b588ab5a06e2ca8ea8f",
+    "source_revision": "unknown",
+    "scope": "Local archive; not independently verified as each remote deployed image."
+  },
+  "sm86_nodes": {
+    "tag": "lazymio/vllm-backport:v0.13.1-sm86",
+    "registry_digest": null,
+    "gpu": "8 x NVIDIA A40 48GB on both nodes",
+    "equivalence_source": "Deployment author confirmation on 2026-10-09",
+    "p2p": {
+      "node_a": "disabled",
+      "node_b": "enabled"
+    },
+    "old_document_hash_status": "Hash matches the sm80 archive Docker config ID; not treated as a verified sm86 registry manifest digest."
+  }
+}

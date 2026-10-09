@@ -108,5 +108,37 @@
     "source": "opt20261006/patches/serve_custom_ar.py",
     "sha256": "7caed5d7659687629e7e0fbb40f5b7cc6075603a6111343ee1b616be40ce743e",
     "adapted": true
+  },
+  "deployment/start-glm53-final.sh": {
+    "source": "start-glm53-optimized.sh",
+    "sha256": "75d31e069839f2dd038cb4b9017e21a4de06054f0a7289b9c09d6788fcadf918",
+    "adapted": true
+  },
+  "deployment/start-dsv4-final.sh": {
+    "source": "dsv4-opt-20261001/run-dsv4-opt.sh",
+    "sha256": "3279d6913779197448e03e0f3f36126ae012bfd98fb002476a2ccb57caaa5000",
+    "adapted": true
+  },
+  "deployment/start-dsv41-a40-final.sh": {
+    "source": "DEPLOYMENT_AND_OPTIMIZATION.md",
+    "sha256": "cf186728e44da390c046237b5850be1a3e80229509797eca9bc816ecd945e5e6",
+    "adapted": true
+  },
+  "deployment/start-dsv41-runtime-final.sh": {
+    "source": "dsv41-opt-20261001/start32_current.sh",
+    "sha256": "7fcb37234fb0235ad95bd05b2cb19c690106a69c88e168fa2339321a71a4cb7e",
+    "adapted": true
+  },
+  "deployment/start-dsv41-a40-p2p-final.sh": {
+    "source": "DEPLOYMENT_AND_OPTIMIZATION.md",
+    "sha256": "cf186728e44da390c046237b5850be1a3e80229509797eca9bc816ecd945e5e6",
+    "adapted": true,
+    "notes": "document-derived wrapper; P2P difference confirmed by author 2026-10-09"
+  },
+  "deployment/start-lmcache.sh": {
+    "source": "start-glm53-optimized.sh",
+    "sha256": "75d31e069839f2dd038cb4b9017e21a4de06054f0a7289b9c09d6788fcadf918",
+    "adapted": true,
+    "notes": "companion template; DSv4/DSv4.1 cache parameters from historical deployment reports"
   }
 }

@@ -1,0 +1,8 @@
+{"phase": "warmup", "round": 0, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 129.3, "per_req_p50": 32.8, "per_req_mean": 32.6, "ttft_max": 1.251, "max_lat": 15.839, "min_lat": 15.481}
+{"phase": "warmup", "round": 1, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 131.4, "per_req_p50": 33.0, "per_req_mean": 33.1, "ttft_max": 1.214, "max_lat": 15.583, "min_lat": 15.296}
+{"phase": "measure", "round": 0, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 129.8, "per_req_p50": 33.2, "per_req_mean": 33.1, "ttft_max": 1.216, "max_lat": 15.778, "min_lat": 15.279}
+{"phase": "measure", "round": 1, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 131.1, "per_req_p50": 32.9, "per_req_mean": 33.0, "ttft_max": 1.209, "max_lat": 15.616, "min_lat": 15.411}
+{"phase": "measure", "round": 2, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 130.0, "per_req_p50": 33.1, "per_req_mean": 33.0, "ttft_max": 1.201, "max_lat": 15.756, "min_lat": 15.321}
+{"phase": "measure", "round": 3, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 135.2, "per_req_p50": 34.0, "per_req_mean": 33.9, "ttft_max": 1.198, "max_lat": 15.153, "min_lat": 15.009}
+{"phase": "measure", "round": 4, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 130.3, "per_req_p50": 32.8, "per_req_mean": 32.8, "ttft_max": 1.216, "max_lat": 15.717, "min_lat": 15.418}
+{"label": "hot-c4-prod-optimized", "c": 4, "out_tokens": 512, "rounds": 5, "agg_tok_s_p50": 130.3, "agg_tok_s_mean": 131.3, "agg_tok_s_min": 129.8, "agg_tok_s_max": 135.2, "per_req_p50_of_p50s": 33.1, "spread_pct": 4.2}

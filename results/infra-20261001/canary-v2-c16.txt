@@ -1,0 +1,5 @@
+{"phase": "warmup", "round": 0, "c": 16, "ok": 16, "err": 0, "agg_tok_s": 739.0, "per_req_p50": 47.2, "per_req_mean": 47.8, "ttft_max": 4.978, "max_lat": 11.086, "min_lat": 10.181}
+{"phase": "measure", "round": 0, "c": 16, "ok": 16, "err": 0, "agg_tok_s": 749.4, "per_req_p50": 48.2, "per_req_mean": 48.3, "ttft_max": 4.762, "max_lat": 10.931, "min_lat": 10.179}
+{"phase": "measure", "round": 1, "c": 16, "ok": 16, "err": 0, "agg_tok_s": 727.1, "per_req_p50": 48.0, "per_req_mean": 48.0, "ttft_max": 4.954, "max_lat": 11.267, "min_lat": 10.084}
+{"phase": "measure", "round": 2, "c": 16, "ok": 16, "err": 0, "agg_tok_s": 749.4, "per_req_p50": 48.6, "per_req_mean": 48.4, "ttft_max": 4.762, "max_lat": 10.931, "min_lat": 10.156}
+{"label": "canary-v2-c16", "c": 16, "out_tokens": 512, "rounds": 3, "agg_tok_s_p50": 749.4, "agg_tok_s_mean": 742.0, "agg_tok_s_min": 727.1, "agg_tok_s_max": 749.4, "per_req_p50_of_p50s": 48.2, "spread_pct": 3.1}

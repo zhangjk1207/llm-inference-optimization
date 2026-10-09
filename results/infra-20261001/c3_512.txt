@@ -1,0 +1,5 @@
+{"phase": "warmup", "round": 0, "c": 3, "ok": 3, "err": 0, "agg_tok_s": 333.7, "per_req_p50": 115.6, "per_req_mean": 114.4, "ttft_max": 0.952, "max_lat": 4.603, "min_lat": 4.399}
+{"phase": "measure", "round": 0, "c": 3, "ok": 3, "err": 0, "agg_tok_s": 347.6, "per_req_p50": 117.6, "per_req_mean": 117.5, "ttft_max": 0.936, "max_lat": 4.419, "min_lat": 4.307}
+{"phase": "measure", "round": 1, "c": 3, "ok": 3, "err": 0, "agg_tok_s": 349.0, "per_req_p50": 116.9, "per_req_mean": 117.2, "ttft_max": 0.921, "max_lat": 4.401, "min_lat": 4.323}
+{"phase": "measure", "round": 2, "c": 3, "ok": 3, "err": 0, "agg_tok_s": 318.7, "per_req_p50": 116.3, "per_req_mean": 113.6, "ttft_max": 0.931, "max_lat": 4.82, "min_lat": 4.329}
+{"label": "hot-c3-graph-test", "c": 3, "out_tokens": 512, "rounds": 3, "agg_tok_s_p50": 347.6, "agg_tok_s_mean": 338.4, "agg_tok_s_min": 318.7, "agg_tok_s_max": 349.0, "per_req_p50_of_p50s": 116.9, "spread_pct": 9.5}

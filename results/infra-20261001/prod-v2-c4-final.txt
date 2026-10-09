@@ -1,0 +1,6 @@
+{"phase": "measure", "round": 0, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 180.9, "per_req_p50": 87.9, "per_req_mean": 89.0, "ttft_max": 9.154, "max_lat": 11.319, "min_lat": 3.138}
+{"phase": "measure", "round": 1, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 434.6, "per_req_p50": 110.6, "per_req_mean": 110.3, "ttft_max": 1.237, "max_lat": 4.712, "min_lat": 4.534}
+{"phase": "measure", "round": 2, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 434.2, "per_req_p50": 110.2, "per_req_mean": 110.2, "ttft_max": 1.252, "max_lat": 4.717, "min_lat": 4.549}
+{"phase": "measure", "round": 3, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 414.1, "per_req_p50": 109.0, "per_req_mean": 107.5, "ttft_max": 1.242, "max_lat": 4.946, "min_lat": 4.631}
+{"phase": "measure", "round": 4, "c": 4, "ok": 4, "err": 0, "agg_tok_s": 438.4, "per_req_p50": 112.0, "per_req_mean": 111.0, "ttft_max": 1.238, "max_lat": 4.672, "min_lat": 4.572}
+{"label": "prod-v2-c4-final", "c": 4, "out_tokens": 512, "rounds": 5, "agg_tok_s_p50": 434.2, "agg_tok_s_mean": 380.4, "agg_tok_s_min": 180.9, "agg_tok_s_max": 438.4, "per_req_p50_of_p50s": 110.2, "spread_pct": 142.3}

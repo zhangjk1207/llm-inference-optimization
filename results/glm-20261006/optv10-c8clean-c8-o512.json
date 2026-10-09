@@ -1,0 +1,15 @@
+[
+ {
+  "label": "speed-c8",
+  "c": 8,
+  "out_tokens": 512,
+  "rounds": 5,
+  "agg_tok_s_p50": 715.6,
+  "agg_tok_s_mean": 715.3,
+  "agg_tok_s_min": 712.6,
+  "agg_tok_s_max": 717.7,
+  "spread_pct": 0.7,
+  "ttft_p50_of_p50_s": 1.128,
+  "ttft_max_seen_s": 1.132
+ }
+]

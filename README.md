@@ -170,3 +170,7 @@ python3 benchmarks/bench_decode.py --api http://127.0.0.1:8000 \
 ```bash
 python3 -m unittest discover -s tests -v
 ```
+
+## 友情链接
+
+[LinuxDo](https://linux.do/) — 真诚、友善、团结、专业，你的品质开源与技术社区

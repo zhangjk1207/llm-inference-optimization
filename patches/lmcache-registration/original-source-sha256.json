@@ -1,0 +1,12 @@
+{
+  "integration/vllm/vllm_multi_process_adapter.py": "3cc3252890e735fb62319351845bb253fc0f2dbf16f7cd19015b630600bf9026",
+  "v1/multiprocess/modules/engine_driven_transfer.py": "17d8143bfefcf1f2a0a0256a5d33a602d6ec2a699d1b8eeca72f6aacfdef15c6",
+  "v1/multiprocess/modules/lmcache_driven_transfer.py": "6ac3dac9b36568ba185200f0a9ce6aa571a7e316b73500daaaacd945ca1089e0",
+  "v1/multiprocess/modules/management.py": "7c6a399eb66c5420eef83a26291032311c17c41153c1e807694d3d0090b20a9b",
+  "v1/multiprocess/protocols/base.py": "1b4f6b07fb52fd1e9595a9fbf4694738770361a1a6f9af0ca7dc6824f9b72fa2",
+  "v1/multiprocess/protocols/controller.py": "f40e62da7d2f536afc2ad93b5f77a3fcac7cc03edd182bc82d0a06c0f0b2f84e",
+  "v1/multiprocess/server.py": "1d9bb580ab1f91c636a71bb12ae803f2cbdfb73335db285ea0d69c9fc186aa6f",
+  "v1/multiprocess/transport/base.py": "521bef046fc231ee45cdc252d3302a01cc415319e28384ed3ffb7b5f3b8be1cf",
+  "v1/multiprocess/transport/zmq_impl/client.py": "2a5374917f9cd67a58cd576a66e2eb092d2d3464a5a7cc892a8890189fb17c87",
+  "v1/multiprocess/transport/zmq_impl/server.py": "f4d89aefc408722c0149fccd2d73cf9dce0aa6a8e884934dedc48ee378f02a5f"
+}

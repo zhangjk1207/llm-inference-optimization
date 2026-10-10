@@ -1,0 +1,550 @@
+{
+  "baseline": {
+    "requests": 65,
+    "failed": [],
+    "stagger": {
+      "anchor": {
+        "ttft_seconds": {
+          "n": 3,
+          "median": 0.12350296974182129,
+          "max": 0.16770172119140625
+        },
+        "elapsed_seconds": {
+          "n": 3,
+          "median": 30.47906517982483,
+          "max": 30.85749912261963
+        },
+        "mean_tpot_seconds": {
+          "n": 3,
+          "median": 0.007401965622209076,
+          "max": 0.007506262659298777
+        }
+      },
+      "long": {
+        "ttft_seconds": {
+          "n": 3,
+          "median": 36.707371950149536,
+          "max": 37.88905906677246
+        },
+        "elapsed_seconds": {
+          "n": 3,
+          "median": 40.037508964538574,
+          "max": 40.68036341667175
+        },
+        "mean_tpot_seconds": {
+          "n": 3,
+          "median": 0.006516418345053835,
+          "max": 0.007044448572046617
+        }
+      },
+      "short": {
+        "ttft_seconds": {
+          "n": 3,
+          "median": 36.233433961868286,
+          "max": 37.40956091880798
+        },
+        "elapsed_seconds": {
+          "n": 3,
+          "median": 39.53567862510681,
+          "max": 40.57940363883972
+        },
+        "mean_tpot_seconds": {
+          "n": 3,
+          "median": 0.007405166871079775,
+          "max": 0.007937032442826491
+        }
+      },
+      "overlap": [
+        false,
+        false,
+        false
+      ]
+    },
+    "agents": {
+      "6": {
+        "completed_agent_tasks": 6,
+        "agent_task_seconds": {
+          "n": 6,
+          "median": 18.369771480560303,
+          "max": 18.496004819869995
+        },
+        "model_call_ttft_seconds": {
+          "n": 12,
+          "median": 8.323112726211548,
+          "max": 14.833902597427368
+        },
+        "admission_wait_seconds": {
+          "n": 12,
+          "median": 9.059906005859375e-06,
+          "max": 1.52587890625e-05
+        },
+        "workload_makespan_seconds": 18.629992961883545,
+        "tokens_generated": 522
+      },
+      "8": {
+        "completed_agent_tasks": 8,
+        "agent_task_seconds": {
+          "n": 8,
+          "median": 20.15904438495636,
+          "max": 20.310542345046997
+        },
+        "model_call_ttft_seconds": {
+          "n": 16,
+          "median": 9.17554783821106,
+          "max": 16.668596029281616
+        },
+        "admission_wait_seconds": {
+          "n": 16,
+          "median": 8.702278137207031e-06,
+          "max": 1.2159347534179688e-05
+        },
+        "workload_makespan_seconds": 21.97673773765564,
+        "tokens_generated": 1193
+      },
+      "10": {
+        "completed_agent_tasks": 10,
+        "agent_task_seconds": {
+          "n": 10,
+          "median": 22.959053993225098,
+          "max": 23.16226577758789
+        },
+        "model_call_ttft_seconds": {
+          "n": 20,
+          "median": 10.554187059402466,
+          "max": 18.807478666305542
+        },
+        "admission_wait_seconds": {
+          "n": 20,
+          "median": 9.417533874511719e-06,
+          "max": 1.2159347534179688e-05
+        },
+        "workload_makespan_seconds": 25.03061866760254,
+        "tokens_generated": 1387
+      }
+    },
+    "sampled_queue_peaks": {
+      "smoke-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 0.0
+      },
+      "stagger-metrics-samples": {
+        "running_max": 2.0,
+        "waiting_max": 2.0
+      },
+      "agents-metrics-samples": {
+        "running_max": 11.0,
+        "waiting_max": 10.0
+      },
+      "cache-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 0.0
+      },
+      "cancel-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 0.0
+      }
+    },
+    "cache": [
+      {
+        "name": "cache-cold",
+        "ok": true,
+        "ttft": 4.699407577514648,
+        "usage": {
+          "prompt_tokens": 16444,
+          "total_tokens": 16561,
+          "completion_tokens": 117,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 96
+          }
+        },
+        "content": "RIVER-7319, CLOUD-2648, STONE-9152"
+      },
+      {
+        "name": "cache-gpu-warm",
+        "ok": true,
+        "ttft": 0.3512308597564697,
+        "usage": {
+          "prompt_tokens": 16444,
+          "total_tokens": 16561,
+          "completion_tokens": 117,
+          "prompt_tokens_details": {
+            "cached_tokens": 16128,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 96
+          }
+        },
+        "content": "RIVER-7319, CLOUD-2648, STONE-9152"
+      },
+      {
+        "name": "cache-external-reload",
+        "ok": true,
+        "ttft": 1.9051172733306885,
+        "usage": {
+          "prompt_tokens": 16444,
+          "total_tokens": 16557,
+          "completion_tokens": 113,
+          "prompt_tokens_details": {
+            "cached_tokens": 16128,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 92
+          }
+        },
+        "content": "RIVER-7319, CLOUD-2648, STONE-9152"
+      }
+    ],
+    "longcontext": []
+  },
+  "candidate": {
+    "requests": 83,
+    "failed": [],
+    "stagger": {
+      "anchor": {
+        "ttft_seconds": {
+          "n": 3,
+          "median": 0.11996245384216309,
+          "max": 0.12071585655212402
+        },
+        "elapsed_seconds": {
+          "n": 3,
+          "median": 35.87637662887573,
+          "max": 46.26138401031494
+        },
+        "mean_tpot_seconds": {
+          "n": 3,
+          "median": 0.011267437311901423,
+          "max": 0.01246638670783479
+        }
+      },
+      "long": {
+        "ttft_seconds": {
+          "n": 3,
+          "median": 14.856508255004883,
+          "max": 14.892717599868774
+        },
+        "elapsed_seconds": {
+          "n": 3,
+          "median": 18.34688091278076,
+          "max": 18.78594946861267
+        },
+        "mean_tpot_seconds": {
+          "n": 3,
+          "median": 0.007688650179749132,
+          "max": 0.010369837284088135
+        }
+      },
+      "short": {
+        "ttft_seconds": {
+          "n": 3,
+          "median": 1.2247569561004639,
+          "max": 1.2299458980560303
+        },
+        "elapsed_seconds": {
+          "n": 3,
+          "median": 16.429345846176147,
+          "max": 16.770145893096924
+        },
+        "mean_tpot_seconds": {
+          "n": 3,
+          "median": 0.042927963298987286,
+          "max": 0.04771288510026603
+        }
+      },
+      "overlap": [
+        true,
+        true,
+        true
+      ]
+    },
+    "agents": {
+      "6": {
+        "completed_agent_tasks": 6,
+        "agent_task_seconds": {
+          "n": 6,
+          "median": 14.012978672981262,
+          "max": 16.354966402053833
+        },
+        "model_call_ttft_seconds": {
+          "n": 12,
+          "median": 3.1099051237106323,
+          "max": 6.838879108428955
+        },
+        "admission_wait_seconds": {
+          "n": 12,
+          "median": 1.0371208190917969e-05,
+          "max": 1.2874603271484375e-05
+        },
+        "workload_makespan_seconds": 23.016565799713135,
+        "tokens_generated": 1023
+      },
+      "8": {
+        "completed_agent_tasks": 8,
+        "agent_task_seconds": {
+          "n": 8,
+          "median": 14.919299960136414,
+          "max": 17.84187340736389
+        },
+        "model_call_ttft_seconds": {
+          "n": 16,
+          "median": 4.144255042076111,
+          "max": 7.806629180908203
+        },
+        "admission_wait_seconds": {
+          "n": 16,
+          "median": 9.655952453613281e-06,
+          "max": 1.1444091796875e-05
+        },
+        "workload_makespan_seconds": 24.87851619720459,
+        "tokens_generated": 1212
+      },
+      "10": {
+        "completed_agent_tasks": 10,
+        "agent_task_seconds": {
+          "n": 10,
+          "median": 18.28346025943756,
+          "max": 20.168200492858887
+        },
+        "model_call_ttft_seconds": {
+          "n": 20,
+          "median": 5.831974625587463,
+          "max": 9.657201051712036
+        },
+        "admission_wait_seconds": {
+          "n": 20,
+          "median": 8.821487426757812e-06,
+          "max": 1.0728836059570312e-05
+        },
+        "workload_makespan_seconds": 26.74751877784729,
+        "tokens_generated": 1380
+      }
+    },
+    "sampled_queue_peaks": {
+      "smoke-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 0.0
+      },
+      "stagger-metrics-samples": {
+        "running_max": 3.0,
+        "waiting_max": 0.0
+      },
+      "agents-metrics-samples": {
+        "running_max": 10.0,
+        "waiting_max": 7.0
+      },
+      "cache-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 1.0
+      },
+      "boundary-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 1.0
+      },
+      "cancel-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 0.0
+      },
+      "longcontext-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 0.0
+      },
+      "cachedepth-metrics-samples": {
+        "running_max": 1.0,
+        "waiting_max": 0.0
+      }
+    },
+    "cache": [
+      {
+        "name": "cache-cold",
+        "ok": true,
+        "ttft": 6.590449333190918,
+        "usage": {
+          "prompt_tokens": 16444,
+          "total_tokens": 16561,
+          "completion_tokens": 117,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 96
+          }
+        },
+        "content": "RIVER-7319, CLOUD-2648, STONE-9152"
+      },
+      {
+        "name": "cache-gpu-warm",
+        "ok": true,
+        "ttft": 0.35008811950683594,
+        "usage": {
+          "prompt_tokens": 16444,
+          "total_tokens": 16561,
+          "completion_tokens": 117,
+          "prompt_tokens_details": {
+            "cached_tokens": 16128,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 96
+          }
+        },
+        "content": "RIVER-7319, CLOUD-2648, STONE-9152"
+      },
+      {
+        "name": "cache-external-reload",
+        "ok": true,
+        "ttft": 0.8445875644683838,
+        "usage": {
+          "prompt_tokens": 16444,
+          "total_tokens": 16561,
+          "completion_tokens": 117,
+          "prompt_tokens_details": {
+            "cached_tokens": 16128,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 96
+          }
+        },
+        "content": "RIVER-7319, CLOUD-2648, STONE-9152"
+      }
+    ],
+    "longcontext": [
+      {
+        "name": "longcontext-65559",
+        "ok": true,
+        "ttft": 26.45486307144165,
+        "elapsed": 27.153339862823486,
+        "usage": {
+          "prompt_tokens": 65559,
+          "total_tokens": 65727,
+          "completion_tokens": 168,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 146
+          }
+        },
+        "content": "FOREST-4826, LAKE-1937, HILL-6058"
+      },
+      {
+        "name": "longcontext-131107",
+        "ok": true,
+        "ttft": 54.24677753448486,
+        "elapsed": 54.83222436904907,
+        "usage": {
+          "prompt_tokens": 131107,
+          "total_tokens": 131261,
+          "completion_tokens": 154,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 132
+          }
+        },
+        "content": "FOREST-4826, LAKE-1937, HILL-6058"
+      },
+      {
+        "name": "longcontext-260142",
+        "ok": true,
+        "ttft": 115.29897093772888,
+        "elapsed": 115.95799994468689,
+        "usage": {
+          "prompt_tokens": 260142,
+          "total_tokens": 260314,
+          "completion_tokens": 172,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "created_cache_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 150
+          }
+        },
+        "content": "FOREST-4826, LAKE-1937, HILL-6058"
+      }
+    ]
+  },
+  "candidate-admit8": {
+    "requests": 38,
+    "failed": [],
+    "stagger": {
+      "anchor": {
+        "ttft_seconds": null,
+        "elapsed_seconds": null,
+        "mean_tpot_seconds": null
+      },
+      "long": {
+        "ttft_seconds": null,
+        "elapsed_seconds": null,
+        "mean_tpot_seconds": null
+      },
+      "short": {
+        "ttft_seconds": null,
+        "elapsed_seconds": null,
+        "mean_tpot_seconds": null
+      },
+      "overlap": []
+    },
+    "agents": {
+      "8": {
+        "completed_agent_tasks": 8,
+        "agent_task_seconds": {
+          "n": 8,
+          "median": 15.092796564102173,
+          "max": 18.79203224182129
+        },
+        "model_call_ttft_seconds": {
+          "n": 16,
+          "median": 4.866268754005432,
+          "max": 7.8212175369262695
+        },
+        "admission_wait_seconds": {
+          "n": 16,
+          "median": 2.5391578674316406e-05,
+          "max": 2.745225667953491
+        },
+        "workload_makespan_seconds": 24.72506833076477,
+        "tokens_generated": 1170
+      },
+      "10": {
+        "completed_agent_tasks": 10,
+        "agent_task_seconds": {
+          "n": 10,
+          "median": 18.340559124946594,
+          "max": 22.20745277404785
+        },
+        "model_call_ttft_seconds": {
+          "n": 20,
+          "median": 6.760047197341919,
+          "max": 9.6270432472229
+        },
+        "admission_wait_seconds": {
+          "n": 20,
+          "median": 1.508665919303894,
+          "max": 4.871662616729736
+        },
+        "workload_makespan_seconds": 26.77278447151184,
+        "tokens_generated": 1349
+      }
+    },
+    "sampled_queue_peaks": {
+      "agents-metrics-samples": {
+        "running_max": 8.0,
+        "waiting_max": 6.0
+      }
+    },
+    "cache": [],
+    "longcontext": []
+  }
+}

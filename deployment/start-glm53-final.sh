@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GLM final deployed configuration (2026-10-06): MTP k=4, CustomAllreduce, capture max=80.
+# GLM deployed configuration (2026-10-10): sub-block prefill, MTP k=4, capture max=80.
 # Adapted from the production script; paths are configurable. See ../README.md.
 set -euo pipefail
 
@@ -29,9 +29,15 @@ CACHEDIR="${CACHEDIR:-$PWD/compile-cache/glm}"
 [ -d "$MODEL" ] && [ -f "$IMAGE" ] || { echo "MODEL directory or IMAGE file missing" >&2; exit 1; }
 command -v "$APPTAINER" >/dev/null
 command -v ss >/dev/null
+# Both processes must load the same LMCache package. See patches/lmcache-registration/README.md.
+LMCACHE_BINDS=()
+if [[ -n "${LMCACHE_PACKAGE:-}" ]]; then
+  [[ -f "$LMCACHE_PACKAGE/__init__.py" ]] || { echo "LMCACHE_PACKAGE must be a complete package directory" >&2; exit 1; }
+  LMCACHE_BINDS=(--bind "$LMCACHE_PACKAGE:/usr/local/lib/python3.12/dist-packages/lmcache:ro")
+fi
 mkdir -p "$LOGDIR" "$CACHEDIR/triton" "$CACHEDIR/tilelang" "$CACHEDIR/inductor"
 
-"$APPTAINER" exec --nv \
+"$APPTAINER" exec --nv "${LMCACHE_BINDS[@]}" \
   --bind "$MODEL:/model:ro" \
   --bind "$CACHEDIR/triton:/root/.triton" \
   --bind "$CACHEDIR/tilelang:/root/.tilelang" \
@@ -56,8 +62,13 @@ mkdir -p "$LOGDIR" "$CACHEDIR/triton" "$CACHEDIR/tilelang" "$CACHEDIR/inductor"
   --max-gpu-workers 4 \
   >"$LOGDIR/lmcache.log" 2>&1 &
 LM_PID=$!
+API_PID=""
 
 cleanup() {
+  if [[ -n "$API_PID" ]]; then
+    kill "$API_PID" 2>/dev/null || true
+    wait "$API_PID" 2>/dev/null || true
+  fi
   kill "$LM_PID" 2>/dev/null || true
   wait "$LM_PID" 2>/dev/null || true
 }
@@ -84,7 +95,7 @@ fi
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PATCHDIR="$SCRIPT_DIR/../patches"
 
-"$APPTAINER" exec --nv \
+"$APPTAINER" exec --nv "${LMCACHE_BINDS[@]}" \
   --bind "$MODEL:/model:ro" \
   --bind "$CACHEDIR/triton:/root/.triton" \
   --bind "$CACHEDIR/tilelang:/root/.tilelang" \
@@ -100,6 +111,7 @@ PATCHDIR="$SCRIPT_DIR/../patches"
   --max-model-len 262144 \
   --max-num-seqs 16 \
   --max-num-batched-tokens 1152 \
+  --long-prefill-token-threshold 1024 \
   --gpu-memory-utilization 0.92 \
   --kv-offloading-size 512 \
   --kv-offloading-backend lmcache \
@@ -112,4 +124,15 @@ PATCHDIR="$SCRIPT_DIR/../patches"
   --tool-call-parser glm47 \
   --reasoning-parser glm45 \
   --trust-remote-code \
-  2>&1 | tee "$LOGDIR/vllm.log"
+  >"$LOGDIR/vllm.log" 2>&1 &
+API_PID=$!
+
+# A supervisor must restart the pair if either child exits, even with status 0.
+set +e
+wait -n "$LM_PID" "$API_PID"
+CHILD_STATUS=$?
+set -e
+if (( CHILD_STATUS == 0 )); then
+  CHILD_STATUS=1
+fi
+exit "$CHILD_STATUS"

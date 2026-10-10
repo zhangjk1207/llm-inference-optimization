@@ -111,8 +111,9 @@
   },
   "deployment/start-glm53-final.sh": {
     "source": "start-glm53-optimized.sh",
-    "sha256": "75d31e069839f2dd038cb4b9017e21a4de06054f0a7289b9c09d6788fcadf918",
-    "adapted": true
+    "sha256": "445ad40f41bcf6876fdf1b8f448d78c2cda8eb67ab6f279a0276e24b6fb126ac",
+    "adapted": true,
+    "notes": "Portable paths and optional shared LMCache package bind; paired process supervision and 1024 prefill threshold."
   },
   "deployment/start-dsv4-final.sh": {
     "source": "dsv4-opt-20261001/run-dsv4-opt.sh",
@@ -140,5 +141,138 @@
     "sha256": "75d31e069839f2dd038cb4b9017e21a4de06054f0a7289b9c09d6788fcadf918",
     "adapted": true,
     "notes": "companion template; DSv4/DSv4.1 cache parameters from historical deployment reports"
+  },
+  "results/glm-20261010/summary.json": {
+    "source": "agent-validation-20261010/summary.json",
+    "sha256": "b7b36d7dda623617b0aa3de63f67e4bfecdb90a08a5a53f9f44df3467c75c716",
+    "adapted": false
+  },
+  "results/glm-20261010/acceptance-summary.json": {
+    "source": "agent-validation-20261010/acceptance-summary.json",
+    "sha256": "89b77c5826bdbad403ebf186b8c34a8e07545be9b4d4ca2fcfe3a7483c922631",
+    "adapted": false
+  },
+  "results/glm-20261010/production-change.diff": {
+    "source": "agent-validation-20261010/production-change.diff",
+    "sha256": "ea7984b9f4ed161e0a42bf1ad96b4b3a7008fff6bddebd3250c2a00b1469ef0d",
+    "adapted": false
+  },
+  "results/glm-20261010/baseline/agents-requests.jsonl": {
+    "source": "agent-validation-20261010/baseline/agents-requests.jsonl",
+    "sha256": "f775275b5f8a12ca8cb967d6c426614563bce3bbcef9410830f6165b6cbe0c56",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/baseline/cache-requests.jsonl": {
+    "source": "agent-validation-20261010/baseline/cache-requests.jsonl",
+    "sha256": "30abf927b973c482d1e293d125a3b5a9b7bde5daee2b7272d207076b952cb8ae",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/baseline/cancel-requests.jsonl": {
+    "source": "agent-validation-20261010/baseline/cancel-requests.jsonl",
+    "sha256": "57eec4e9138c6dde044d78e883bd743c5cde77fb7d556e51be13a3db881381b0",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/baseline/smoke-requests.jsonl": {
+    "source": "agent-validation-20261010/baseline/smoke-requests.jsonl",
+    "sha256": "c5d8f251f4d2c526c58b3b3195ef47398550ae01e7f026e7b5e2b2294779a7c6",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/baseline/stagger-requests.jsonl": {
+    "source": "agent-validation-20261010/baseline/stagger-requests.jsonl",
+    "sha256": "2115d52572ab632c30d376b9ae47fc5dce72f170f3ca5ce5846abf167d4c4324",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/agents-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/agents-requests.jsonl",
+    "sha256": "9f214e8d606315cbc12ca04327c9f1b6cd1e38a6b48895dbc9c193ccda6bc171",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/boundary-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/boundary-requests.jsonl",
+    "sha256": "b5ae18b517064d5b9a3f161079ddc0ca6d51702f9b76eeee1f08b0271f7b484d",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/cache-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/cache-requests.jsonl",
+    "sha256": "ef6d68b877346c02675062870e9db28b358065e5531290d11e7647eb156bbcf4",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/cachedepth-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/cachedepth-requests.jsonl",
+    "sha256": "26d644d317374717047af140040a56a2ae54c540912d8eb4fdc33aefadac2cbb",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/cancel-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/cancel-requests.jsonl",
+    "sha256": "8329e4b290effa1d08170182f8ee8eadaa9468adbfa8e104a7d6725322e1b09c",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/diagnostics/initial-1024-output-boundary-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/diagnostics/initial-1024-output-boundary-requests.jsonl",
+    "sha256": "9cf6a8e313dd96706052c3569661ba5d62838df793aa518981ff0dac099c454d",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/longcontext-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/longcontext-requests.jsonl",
+    "sha256": "7a444337b25f99dd2680eb3da5d42b212f40d69638b2ab01de0b0eab51bdd435",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/smoke-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/smoke-requests.jsonl",
+    "sha256": "e9426a56dc9ff90a367c57d32382c7610e2bade476b341fe666ca7a0b8eebfc0",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate/stagger-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate/stagger-requests.jsonl",
+    "sha256": "18617726bf743128296c2f7dcd89bb3fdc2e821536f98df8e59d6e8c86d6fe47",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate-admit8/agents-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate-admit8/agents-requests.jsonl",
+    "sha256": "d7cafe7566cfa6e780a6c29c1b19f2e296f715591b708341135ae85fd06e0e8a",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate-fresh-boundary/boundary-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate-fresh-boundary/boundary-requests.jsonl",
+    "sha256": "ee7142b8bfd347500a1634d4d4de5a2ef55f66fe72fb198fab87ba6de2f6a1f3",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "results/glm-20261010/candidate-diagnostic/boundary-requests.jsonl": {
+    "source": "agent-validation-20261010/candidate-diagnostic/boundary-requests.jsonl",
+    "sha256": "183810f497cec21b49ceadae62862a03eee6a6ee87d5bae621d976d4350c4dcb",
+    "adapted": true,
+    "notes": "Synthetic request timing/usage allowlist; text, tool payloads and diagnostics omitted. ok denotes transport completion, not semantic correctness."
+  },
+  "patches/lmcache-registration/registration-liveness.patch": {
+    "source": "lmcache-fix-20261009/backport.diff",
+    "sha256": "0089f50d262c34c245fcf53639d325d64f5f159e2422abed0affb19e12305901",
+    "adapted": false
+  },
+  "patches/lmcache-registration/verify_registration.py": {
+    "source": "lmcache-fix-20261009/test_backport.py",
+    "sha256": "c1f8fdf499d874f1de9d590cd1b42930edc076019654e4d68f51062552ac62db",
+    "adapted": false
+  },
+  "results/glm-20261010/README.md": {
+    "source": "agent-validation-20261010/REPORT.md",
+    "sha256": "5d14a5ed073ed04d60bcfe2dd1fbe756ba625ea89a241eeafd21349a3793fd20",
+    "adapted": true,
+    "notes": "Public report with repository-relative artifacts and measurement limitations."
   }
 }

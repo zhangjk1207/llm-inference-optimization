@@ -1,0 +1,645 @@
+--- a/lmcache/integration/vllm/vllm_multi_process_adapter.py
++++ b/lmcache/integration/vllm/vllm_multi_process_adapter.py
+@@ -33,6 +33,7 @@
+ from lmcache.v1.multiprocess.mq import MessagingFuture
+ from lmcache.v1.multiprocess.transfer_context import (
+     EngineDrivenTransferContext,
++    LMCacheDrivenTransferContext,
+     TransferContext,
+     create_transfer_context,
+ )
+@@ -302,6 +303,14 @@
+         return False
+ 
+ 
++def send_registered_ping(req_client, timeout, instance_id, registration_type):
++    try:
++        return req_client.ping_registered(instance_id, registration_type).result(timeout=timeout)
++    except Exception:
++        logger.debug('Registration-aware ping failed', exc_info=True)
++        return None
++
++
+ @dataclass
+ class ParallelStrategy:
+     mla_only: bool
+@@ -452,6 +461,7 @@
+         health_event: threading.Event,
+         interval: float = DEFAULT_HEARTBEAT_INTERVAL,
+         instance_id: int | None = None,
++        registration_type: str | None = None,
+     ):
+         """
+         Args:
+@@ -474,6 +484,7 @@
+         self._health_event = health_event
+         self._interval = interval
+         self._instance_id = instance_id
++        self._registration_type = registration_type
+ 
+         # Optional callback invoked on the unhealthy->healthy edge,
+         # before the health event is set. See register_recover_callback.
+@@ -512,9 +523,17 @@
+         UNREGISTER must not re-register a ghost context.
+         """
+         was_healthy = self._health_event.is_set()
+-        healthy = send_ping(
+-            self._req_client, timeout=self._interval, instance_id=self._instance_id
+-        )
++        if self._registration_type is not None and self._instance_id is not None:
++            result = send_registered_ping(
++                self._req_client, self._interval, self._instance_id, self._registration_type
++            )
++            server_reachable = result is not None
++            healthy = result is True
++        else:
++            server_reachable = send_ping(
++                self._req_client, timeout=self._interval, instance_id=self._instance_id
++            )
++            healthy = server_reachable
+ 
+         if self.stop_requested:
+             return ThreadRunSummary(
+@@ -522,8 +541,14 @@
+                 message="stop requested; skipping health update",
+             )
+ 
++        registration_missing = server_reachable and not healthy
++        if registration_missing:
++            self._health_event.clear()
++            logger.warning('LMCache worker registration is missing; triggering recovery')
+         need_trigger_recover = (
+-            healthy and not was_healthy and self._recover_callback is not None
++            server_reachable
++            and (registration_missing or not was_healthy)
++            and self._recover_callback is not None
+         )
+ 
+         # Try to call recover callback
+@@ -534,6 +559,8 @@
+             # If the callback fails, it should not become healthy
+             healthy = self._recover_callback()
+ 
++        if self.stop_requested:
++            return ThreadRunSummary(success=True, message='stop requested after recovery')
+         if healthy:
+             self._health_event.set()
+             if not was_healthy:
+@@ -1234,6 +1261,9 @@
+         self.engine_group_infos: list[EngineGroupInfo] = []
+         # Transport context for transfer operations.
+         self.transfer_ctx: TransferContext | None = None
++        self._registration_lock = threading.RLock()
++        self._shutdown_started = False
++        self._primary_registration_type: str | None = None
+ 
+         # Request futures
+         self.store_futures: dict[str, MessagingFuture[StoreResult]] = {}
+@@ -1294,10 +1324,9 @@
+         self._health_event = threading.Event()
+         self._health_event.set()
+ 
+-        # Heartbeat thread is created but NOT started yet.
+-        # It will be lazily started on the first store or retrieve
+-        # request, by which time vLLM is fully ready (model loaded,
+-        # KV caches allocated, warmup & CUDA graph capture done).
++        # Start heartbeat after registration ACK, including request-idle workers.
++        # The server retains the longer startup grace until a real transfer
++        # AND a heartbeat have both been observed.
+         self._heartbeat_interval = heartbeat_interval
+         self._heartbeat: HeartbeatThread | None = None
+         self._heartbeat_lock = threading.Lock()
+@@ -1403,62 +1432,43 @@
+             layout_hints if layout_hints is not None else vllm_layout_hints()
+         )
+         self._send_register_kv_caches_request(kv_caches)
++        self._ensure_heartbeat_started()
+ 
+     def _block_ids_per_group(self, op: LoadStoreOp) -> list[list[int]]:
+         return expand_engine_block_ids(self.engine_group_infos, op.block_ids)
+ 
+-    def _send_register_kv_caches_request(
+-        self,
+-        kv_caches: dict[str, torch.Tensor],
+-    ) -> None:
+-        """Submit a REGISTER_KV_CACHE request and wait for the response.
+-
+-        Shared by the public ``register_kv_caches`` entry point and the
+-        heartbeat recovery path (``_reregister_kv_caches_callback``).
+-
+-        Args:
+-            kv_caches: The KV cache dict to register.
+-
+-        Raises:
+-            ConnectionError: if the server does not respond within
+-                mq_timeout.
+-        """
+-        self.kv_caches = kv_caches
+-        transfer_ctx = create_transfer_context(kv_caches, mode=self._mp_transfer_mode)
+-        layout_hints = self._layout_hints
+-        self.transfer_ctx = transfer_ctx
+-        try:
+-            # Register on the local, not self.transfer_ctx: a concurrent
+-            # shutdown() may null self.transfer_ctx between publish and this
+-            # call. The local is always non-None.
+-            transfer_ctx.register(
+-                self.instance_id,
+-                kv_caches,
+-                self.model_name,
+-                self.world_size,
+-                self.blocks_in_chunk,
+-                self.req_client,
+-                self._mq_timeout,
+-                layout_hints=layout_hints,
+-                engine_group_infos=self.engine_group_infos,
+-                engine_type=EngineType.VLLM,
+-            )
+-        except TimeoutError:
+-            raise ConnectionError(
+-                "LMCache server did not respond to "
+-                "register_kv_caches within "
+-                f"{self._mq_timeout}s. Is the server running?"
+-            ) from None
++    def _send_register_kv_caches_request(self, kv_caches) -> None:
++        with self._registration_lock:
++            if self._shutdown_started:
++                raise ConnectionError("Worker shutdown has started")
++            self.kv_caches = kv_caches
++            previous = self.transfer_ctx
++            if previous is not None and not isinstance(previous, LMCacheDrivenTransferContext):
++                raise ConnectionError("This deployment backport only recovers IPC transfer contexts")
++            candidate = previous or create_transfer_context(kv_caches, mode=self._mp_transfer_mode)
++            try:
++                candidate.register(
++                    self.instance_id, kv_caches, self.model_name, self.world_size,
++                    self.blocks_in_chunk, self.req_client, self._mq_timeout,
++                    layout_hints=self._layout_hints,
++                    engine_group_infos=self.engine_group_infos,
++                    engine_type=EngineType.VLLM,
++                )
++            except Exception as exc:
++                if previous is None:
++                    candidate.close()
++                raise ConnectionError("LMCache KV registration failed") from exc
++            self.transfer_ctx = candidate
++            self._primary_registration_type = (
++                "register_kv_cache" if isinstance(candidate, LMCacheDrivenTransferContext)
++                else "register_kv_cache_engine_driven_context"
++            )
+ 
+     def _ensure_heartbeat_started(self) -> None:
+-        """Lazily start the heartbeat thread on first store/retrieve.
+-
+-        The heartbeat starts healthy (the event was set at construction). A
+-        live worker pings every interval, refreshing its server-side
+-        ``last_seen``, so it is never reaped while alive -- no re-registration
+-        is needed at startup, and the first store/retrieve is not gated. The
+-        recover callback still re-registers on a genuine unhealthy->healthy
+-        edge (server restart).
++        """Start once after registration; detect loss of the primary context.
++
++        Also called from transfer paths as an idempotent safeguard. Recovery
++        completes registration before marking the adapter healthy again.
+         """
+         if self._heartbeat is not None:
+             return
+@@ -1470,6 +1480,7 @@
+                 health_event=self._health_event,
+                 interval=self._heartbeat_interval,
+                 instance_id=self.instance_id,
++                registration_type=self._primary_registration_type,
+             )
+             heartbeat.register_recover_callback(self._reregister_kv_caches_callback)
+             heartbeat.start()
+@@ -1482,7 +1493,7 @@
+             ``True`` only if a heartbeat exists and its stop was requested.
+         """
+         heartbeat = self._heartbeat
+-        return heartbeat is not None and heartbeat.stop_requested
++        return self._shutdown_started or (heartbeat is not None and heartbeat.stop_requested)
+ 
+     def _reregister_kv_caches_callback(self) -> bool:
+         """Heartbeat recover callback: re-register KV caches after the
+@@ -2090,31 +2101,33 @@
+             if self._heartbeat is not None:
+                 self._heartbeat.stop()
+ 
+-        logger.info("Unregistering kv caches")
+-        try:
+-            if isinstance(self.transfer_ctx, EngineDrivenTransferContext):
+-                future = self.req_client.unregister_kv_cache_engine_driven_context(
+-                    self.instance_id
++        with self._registration_lock:
++            self._shutdown_started = True
++            logger.info("Unregistering kv caches")
++            try:
++                if isinstance(self.transfer_ctx, EngineDrivenTransferContext):
++                    future = self.req_client.unregister_kv_cache_engine_driven_context(
++                        self.instance_id
++                    )
++                else:
++                    future = self.req_client.unregister_kv_cache(self.instance_id)
++                future.result(timeout=self._mq_timeout)
++            except TimeoutError:
++                logger.warning(
++                    "LMCache server did not respond to unregister within %ss. "
++                    "Proceeding with shutdown.",
++                    self._mq_timeout,
+                 )
+-            else:
+-                future = self.req_client.unregister_kv_cache(self.instance_id)
+-            future.result(timeout=self._mq_timeout)
+-        except TimeoutError:
+-            logger.warning(
+-                "LMCache server did not respond to unregister within %ss. "
+-                "Proceeding with shutdown.",
+-                self._mq_timeout,
+-            )
+-
+-        if self.dispatcher is not None:
+-            dispatch(self.dispatcher, "shutdown")
+-
+-        if self.transfer_ctx is not None:
+-            self.transfer_ctx.close()
+-            self.transfer_ctx = None
+-
+-        self.req_client.close()
+-        self.request_telemetry.close()
++
++            if self.dispatcher is not None:
++                dispatch(self.dispatcher, "shutdown")
++
++            if self.transfer_ctx is not None:
++                self.transfer_ctx.close()
++                self.transfer_ctx = None
++
++            self.req_client.close()
++            self.request_telemetry.close()
+ 
+     # Helper functions
+     def _update_and_get_finished_store(
+--- a/lmcache/v1/multiprocess/modules/engine_driven_transfer.py
++++ b/lmcache/v1/multiprocess/modules/engine_driven_transfer.py
+@@ -50,6 +50,7 @@
+             instance (register, PING, prepare/commit). Drives reaping.
+         has_liveness_signal: True once the instance has sent at least one
+             PING. Selects the reap window. Latched only by PING.
++        has_transfer_activity: True after a real prepare or commit request.
+     """
+ 
+     metadata: EngineDrivenContextMetadata
+@@ -57,6 +58,7 @@
+     world_size: int
+     last_seen: float = 0.0
+     has_liveness_signal: bool = False
++    has_transfer_activity: bool = False
+ 
+ 
+ class EngineDrivenTransferModule(InstanceLivenessTarget):
+@@ -124,13 +126,16 @@
+             self._engine_driven_contexts.clear()
+             self._strategies.clear()
+ 
+-    def touch_instance(self, instance_id: int) -> None:
++    def touch_instance(self, instance_id: int) -> bool:
+         """Refresh the worker's last-seen time and mark it ping-proven.
+ 
+         A no-op if the instance is not tracked.
+ 
+         Args:
+             instance_id: The worker instance ID.
++
++        Returns:
++            True if the Context exists and was refreshed; otherwise False.
+         """
+         now = time.monotonic()
+         with self._lock:
+@@ -138,6 +143,7 @@
+             if entry is not None:
+                 entry.last_seen = now
+                 entry.has_liveness_signal = True
++            return entry is not None
+ 
+     def tracked_instance_count(self) -> int:
+         """Return the number of currently registered non-GPU instances."""
+@@ -149,12 +155,12 @@
+     ) -> list[int]:
+         """Reap non-GPU registrations that have gone silent.
+ 
+-        A ping-proven instance is judged against ``reap_timeout_s``; one that
+-        has never pinged against the larger ``registration_grace_s``.
+-
+-        Args:
+-            reap_timeout_s: Silence budget for ping-proven instances.
+-            registration_grace_s: Silence budget for never-pinged instances.
++        A PING-and-transfer-proven instance uses ``reap_timeout_s``; all other
++        instances use ``registration_grace_s``.
++
++        Args:
++            reap_timeout_s: Silence budget for fully active instances.
++            registration_grace_s: Silence budget before both signals.
+ 
+         Returns:
+             The instance IDs reaped this scan.
+@@ -168,7 +174,7 @@
+                 if now - entry.last_seen
+                 > (
+                     reap_timeout_s
+-                    if entry.has_liveness_signal
++                    if (entry.has_liveness_signal and entry.has_transfer_activity)
+                     else registration_grace_s
+                 )
+             ]
+@@ -179,10 +185,12 @@
+         for iid, entry in reaped:
+             self._release_entry(iid, entry)
+             logger.warning(
+-                "Reaped non-GPU instance %d: silent for %.1fs (pinged=%s)",
++                "Reaped non-GPU instance %d: silent for %.1fs "
++                "(pinged=%s, transfer_activity=%s)",
+                 iid,
+                 now - entry.last_seen,
+                 entry.has_liveness_signal,
++                entry.has_transfer_activity,
+             )
+         return [iid for iid, _ in reaped]
+ 
+@@ -192,8 +200,7 @@
+         """Return (entry, strategy) for a transfer, refreshing last_seen.
+ 
+         Pair-atomicity guarantees the entry exists whenever the strategy
+-        does. Refreshes last_seen (no latch) so an active worker is not
+-        reaped mid-transfer.
++        does. Also records transfer activity.
+ 
+         Args:
+             instance_id: The worker instance ID.
+@@ -214,6 +221,7 @@
+                     f"instance ID {instance_id}"
+                 )
+             entry.last_seen = now
++            entry.has_transfer_activity = True
+             return entry, strategy
+ 
+     def _release_entry(self, instance_id: int, entry: EngineDrivenContextEntry) -> None:
+--- a/lmcache/v1/multiprocess/modules/lmcache_driven_transfer.py
++++ b/lmcache/v1/multiprocess/modules/lmcache_driven_transfer.py
+@@ -634,8 +634,8 @@
+         last_seen: ``time.monotonic()`` of the most recent activity from
+             this instance (register, PING, store, or retrieve). Drives reaping.
+         has_liveness_signal: True once the instance has sent at least one
+-            PING. Selects the reap window (timeout vs registration grace).
+-            Latched only by PING, never by traffic.
++            PING. Latched only by PING, never by traffic.
++        has_transfer_activity: True after a real store or retrieve.
+         event_backend: Cached event backend selected for this context's device.
+     """
+ 
+@@ -644,6 +644,7 @@
+     world_size: int
+     last_seen: float = 0.0
+     has_liveness_signal: bool = False
++    has_transfer_activity: bool = False
+     event_backend: EventIPCBackend | None = None
+ 
+ 
+@@ -693,15 +694,18 @@
+         """Return the shared engine context. Exposed for testing only."""
+         return self._ctx
+ 
+-    def get_and_touch_context_entry(self, instance_id: int) -> ContextEntry | None:
++    def get_and_touch_context_entry(
++        self, instance_id: int, *, transfer_activity: bool = False
++    ) -> ContextEntry | None:
+         """Return the entry for ``instance_id``, refreshing its last-seen time.
+ 
+         The refresh keeps an actively transferring worker from being reaped
+-        even if its PINGs are briefly delayed. Does not latch the
+-        ping-proven flag -- only PINGs do that.
++        even if its PINGs are briefly delayed. ``transfer_activity`` is latched
++        only for real transfers.
+ 
+         Args:
+             instance_id: The worker instance ID.
++            transfer_activity: Whether this is a real transfer request.
+ 
+         Returns:
+             The entry, or None if the instance is not (or no longer) tracked.
+@@ -711,6 +715,8 @@
+             entry = self._cache_contexts.get(instance_id)
+             if entry is not None:
+                 entry.last_seen = now
++                if transfer_activity:
++                    entry.has_transfer_activity = True
+             return entry
+ 
+     def _release_failed_retrieve_locks(
+@@ -768,13 +774,16 @@
+         with self._lock:
+             return dict(self._cache_contexts)
+ 
+-    def touch_instance(self, instance_id: int) -> None:
++    def touch_instance(self, instance_id: int) -> bool:
+         """Refresh the worker's last-seen time and mark it ping-proven.
+ 
+         A no-op if the instance is not tracked.
+ 
+         Args:
+             instance_id: The worker instance ID.
++
++        Returns:
++            True if the Context exists and was refreshed; otherwise False.
+         """
+         now = time.monotonic()
+         with self._lock:
+@@ -782,6 +791,7 @@
+             if entry is not None:
+                 entry.last_seen = now
+                 entry.has_liveness_signal = True
++            return entry is not None
+ 
+     def tracked_instance_count(self) -> int:
+         """Return the number of currently registered instances."""
+@@ -793,12 +803,12 @@
+     ) -> list[int]:
+         """Reap GPU registrations that have gone silent.
+ 
+-        A ping-proven instance is judged against ``reap_timeout_s``; one
+-        that has never pinged against the larger ``registration_grace_s``.
++        A PING-and-transfer-proven instance uses ``reap_timeout_s``; all other
++        instances use ``registration_grace_s``.
+ 
+         Args:
+-            reap_timeout_s: Silence budget for ping-proven instances.
+-            registration_grace_s: Silence budget for never-pinged instances.
++            reap_timeout_s: Silence budget for fully active instances.
++            registration_grace_s: Silence budget before both signals.
+ 
+         Returns:
+             The instance IDs reaped this scan.
+@@ -812,7 +822,7 @@
+                 if now - entry.last_seen
+                 > (
+                     reap_timeout_s
+-                    if entry.has_liveness_signal
++                    if (entry.has_liveness_signal and entry.has_transfer_activity)
+                     else registration_grace_s
+                 )
+             ]
+@@ -822,10 +832,12 @@
+         entries: list[ContextEntry] = []
+         for iid, e in reaped:
+             logger.warning(
+-                "Reaped GPU instance %d: silent for %.1fs (pinged=%s)",
++                "Reaped GPU instance %d: silent for %.1fs "
++                "(pinged=%s, transfer_activity=%s)",
+                 iid,
+                 now - e.last_seen,
+                 e.has_liveness_signal,
++                e.has_transfer_activity,
+             )
+             reaped_ids.append(iid)
+             entries.append(e)
+@@ -1045,7 +1057,7 @@
+         """
+         st = time.perf_counter()
+ 
+-        entry = self.get_and_touch_context_entry(instance_id)
++        entry = self.get_and_touch_context_entry(instance_id, transfer_activity=True)
+         if entry is None:
+             # The worker can reconnect to a replacement server before its next
+             # registration probe. No device work was submitted in that window,
+@@ -1285,7 +1297,7 @@
+         """
+         st = time.perf_counter()
+ 
+-        entry = self.get_and_touch_context_entry(instance_id)
++        entry = self.get_and_touch_context_entry(instance_id, transfer_activity=True)
+         if entry is None:
+             # See store(): there is no completion event because no device work
+             # was submitted. The False result lets the caller recover or
+--- a/lmcache/v1/multiprocess/modules/management.py
++++ b/lmcache/v1/multiprocess/modules/management.py
+@@ -50,10 +50,12 @@
+         worker_reap_timeout_seconds: float = 0.0,
+         worker_registration_grace_seconds: float = 0.0,
+         experimental_transfer: Sequence[str] = (),
++        registration_targets: dict[str, InstanceLivenessTarget] | None = None,
+     ) -> None:
+         self._ctx = ctx
+         self._clear_lock = threading.Lock()
+         self._liveness_targets = tuple(liveness_targets)
++        self._registration_targets = dict(registration_targets or {})
+         self._reap_timeout = worker_reap_timeout_seconds
+         self._reap_grace = worker_registration_grace_seconds
+         self._experimental_transfer = tuple(experimental_transfer)
+@@ -117,6 +119,14 @@
+                 target.touch_instance(instance_id)
+         return True
+ 
++    def ping_registered(self, instance_id: int, registration_type: str) -> bool:
++        target = self._registration_targets.get(registration_type)
++        present = target is not None and target.touch_instance(instance_id)
++        for other in self._liveness_targets:
++            if other is not target:
++                other.touch_instance(instance_id)
++        return bool(present)
++
+     def _reap_cycle(self) -> ThreadRunSummary:
+         """Run one reaper scan: reap stale workers, drop mirrored state.
+ 
+--- a/lmcache/v1/multiprocess/protocols/base.py
++++ b/lmcache/v1/multiprocess/protocols/base.py
+@@ -91,6 +91,8 @@
+ 
+     CB_PROTOCOL_HANDSHAKE = enum.auto()
+ 
++    PING_REGISTERED = enum.auto()
++
+     # Deprecated aliases.
+     CB_REGISTER_ROPE_V3 = CB_REGISTER_ROPE
+     CB_UNREGISTER_ROPE_V3 = CB_UNREGISTER_ROPE
+--- a/lmcache/v1/multiprocess/protocols/controller.py
++++ b/lmcache/v1/multiprocess/protocols/controller.py
+@@ -17,6 +17,7 @@
+     "GET_CHUNK_SIZE",
+     "GET_EXPERIMENTAL",
+     "PING",
++    "PING_REGISTERED",
+ ]
+ 
+ 
+@@ -51,6 +52,11 @@
+         # BLOCKING on the NORMAL pool: keeps PING off the MQ main loop (where a
+         # slow SYNC REGISTER_KV_CACHE would stall it) and lets pool saturation
+         # surface as worker degraded mode.
++        "PING_REGISTERED": ProtocolDefinition(
++            payload_classes=[int, str],
++            response_class=bool,
++            handler_type=HandlerType.BLOCKING,
++        ),
+         "PING": ProtocolDefinition(
+             payload_classes=[int | None],
+             response_class=bool,
+--- a/lmcache/v1/multiprocess/server.py
++++ b/lmcache/v1/multiprocess/server.py
+@@ -194,6 +194,14 @@
+         for m in transfer_modules
+         if isinstance(m, (LMCacheDrivenTransferModule, EngineDrivenTransferModule))
+     ]
++
++    registration_targets = {}
++    for target in liveness_targets:
++        name = (
++            'register_kv_cache' if isinstance(target, LMCacheDrivenTransferModule)
++            else 'register_kv_cache_engine_driven_context'
++        )
++        registration_targets[name] = target
+ 
+     blend_module: EngineModule | None = None
+     if mp_config.engine_type == "blend":
+@@ -269,6 +277,7 @@
+     management = ManagementModule(
+         ctx,
+         liveness_targets=liveness_targets,
++        registration_targets=registration_targets,
+         worker_reap_timeout_seconds=mp_config.worker_reap_timeout_seconds,
+         worker_registration_grace_seconds=mp_config.worker_registration_grace_seconds,
+         experimental_transfer=experimental_transfer,
+--- a/lmcache/v1/multiprocess/transport/base.py
++++ b/lmcache/v1/multiprocess/transport/base.py
+@@ -100,6 +100,10 @@
+ 
+     def ping(self, instance_id: int | None) -> MessagingFuture[Any]: ...
+ 
++    def ping_registered(
++        self, instance_id: int, registration_type: str
++    ) -> MessagingFuture[Any]: ...
++
+     def report_block_allocation(
+         self,
+         instance_id: int,
+--- a/lmcache/v1/multiprocess/transport/zmq_impl/client.py
++++ b/lmcache/v1/multiprocess/transport/zmq_impl/client.py
+@@ -192,6 +192,11 @@
+         """Check server health and refresh worker liveness."""
+         return self._call(RequestType.PING, instance_id)
+ 
++    def ping_registered(
++        self, instance_id: int, registration_type: str
++    ) -> MessagingFuture[Any]:
++        return self._call(RequestType.PING_REGISTERED, instance_id, registration_type)
++
+     def report_block_allocation(
+         self,
+         instance_id: int,
+--- a/lmcache/v1/multiprocess/transport/zmq_impl/server.py
++++ b/lmcache/v1/multiprocess/transport/zmq_impl/server.py
+@@ -149,6 +149,7 @@
+                 ThreadPoolType.SYNC,
+             ),
+             HandlerSpec(RequestType.PING, module.ping, ThreadPoolType.NORMAL),
++            HandlerSpec(RequestType.PING_REGISTERED, module.ping_registered, ThreadPoolType.NORMAL),
+             HandlerSpec(RequestType.NOOP, module.debug, ThreadPoolType.SYNC),
+             HandlerSpec(
+                 RequestType.REPORT_BLOCK_ALLOCATION,

@@ -1,0 +1,2 @@
+# Unified diffs need a single space to represent an empty context line.
+patches/lmcache-registration/*.patch whitespace=-blank-at-eol

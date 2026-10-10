@@ -1,0 +1,10 @@
+--- before
++++ after
+@@ -103,6 +103,7 @@
+   --max-model-len 262144 \
+   --max-num-seqs 16 \
+   --max-num-batched-tokens 1152 \
++  --long-prefill-token-threshold 1024 \
+   --gpu-memory-utilization 0.92 \
+   --kv-offloading-size 512 \
+   --kv-offloading-backend lmcache \

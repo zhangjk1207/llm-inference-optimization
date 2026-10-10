@@ -1,0 +1,20 @@
+{
+  "mixed_overlap": true,
+  "agent_workflows": 24,
+  "fresh_boundary_requests": 12,
+  "long_context_prompt_tokens": [
+    65559,
+    131107,
+    260142
+  ],
+  "context_limit_enforced": true,
+  "cpu_reload_depths": [
+    4608,
+    10368,
+    16128
+  ],
+  "cancellation_releases_backend": true,
+  "selected": "candidate-1024",
+  "max_num_seqs": 16,
+  "admission_limit_8": "not deployed; no consistent task-time benefit in the exploratory comparison"
+}

@@ -24,13 +24,31 @@ GLM-5.3-Flash、DeepSeek-V4 和 DeepSeek-V4.1 的 PCIe 多卡推理优化，包�
 | 并行与算子 | TP4，MARLIN WNA16 MoE，CustomAllreduce |
 | 最大上下文 / 最大序列数 | 262144 / 16 |
 | 投机解码 / batched tokens | MTP k=4 / 1152 |
+| 长输入每轮 prefill 上限 | 1024（2026-10-10，改善已有生成时长输入的准入） |
 | GPU 显存预算 | 0.92 |
 | KV 缓存 | Prefix cache + LMCache，CPU L1 512GiB，chunk 1152 |
 | CUDA graph | FULL_AND_PIECEWISE；`[1,2,4,5,8,10,16,20,25,32,40,48,56,64,72,80]` |
 
-### 并发测试
+### 2026-10-10：长输入调度与 Agent 验证
 
-同并发预热，512 token 输出，5 轮取 p50。吞吐单位为 token/s，TTFT 单位为秒。
+部署新增 `--long-prefill-token-threshold 1024`，保留 MTP k=4、256K 总上下文和 16 序列上限。当前 backport 的总预算和物理缓存块均为 1152；已有请求先占用解码预算时，默认对齐可能将新长输入的可调度量裁为零。1024 上限启用该版本支持的子块 prefill，改善长输入准入。
+
+| 测试指标 | 调整前 | 调整后 |
+|---|---:|---:|
+| 已有长生成时，新 8K 输入 TTFT | 30.84s | 4.00s |
+| 已有长生成时，新 32K 输入 TTFT，两轮 | 36.71 / 37.89s | 14.86 / 14.89s |
+| 6 / 8 / 10 Agent 完整任务耗时中位数 | 18.37 / 20.16 / 22.96s | 14.01 / 14.92 / 18.28s |
+| 单请求 16K 冷输入 TTFT | 4.70s | 6.59s |
+
+生成请求均经过 new-api。TTFT 包含思考；交错负载中短请求首 token 中位数从 36.23s 降至 1.22s，首正文从 38.39s 降至 15.44s。收益主要是减少等待；冷长输入及正在生成的请求可能变慢，不宣称总吞吐提升。Agent 各档只有一轮，不能作为 P95/SLA。
+
+缓存回读、12 次新前缀边界检查、取消及接近 256K 的输入检查通过。未上线固定 8 路准入限制或用户级网关公平调度。完整条件、截断样本和代价见 [实测报告与记录](results/glm-20261010/README.md)。
+
+部署还使用 [LMCache 注册存活修复](patches/lmcache-registration/README.md)。启动脚本支持通过 `LMCACHE_PACKAGE` 给缓存服务和推理进程绑定同一修复包，并在任一子进程退出时整体退出，由外部进程管理器重启。
+
+### 2026-10-06：历史短输入并发测试
+
+同并发预热，512 token 输出，5 轮取 p50。吞吐单位为 token/s，TTFT 单位为秒。这组历史结果早于 10-10 调度修复，不代表当前配置的重新测量，也不覆盖已有长生成时的新长输入准入。
 
 | 请求并发 | 基线聚合 tok/s | 最终聚合 tok/s | 变化 | 最终 TTFT，s | 各轮吞吐范围 |
 |---:|---:|---:|---:|---:|---|
@@ -120,6 +138,7 @@ GLM-5.3-Flash、DeepSeek-V4 和 DeepSeek-V4.1 的 PCIe 多卡推理优化，包�
 # GLM：同时启动 LMCache 和推理服务
 MODEL=/models/GLM-5.3-Flash-W4A16 \
 IMAGE=/images/vllm-backport-v0.13.1-sm80.sif \
+LMCACHE_PACKAGE=/packages/lmcache-registration-fixed \
 bash deployment/start-glm53-final.sh
 
 # DeepSeek V4
@@ -144,7 +163,7 @@ CACHE_CHUNK_SIZE=256 CACHE_SIZE_GB=256 CACHE_GPU_WORKERS=4 \
 bash deployment/start-lmcache.sh
 ```
 
-默认 API 监听 `127.0.0.1`；对外提供服务时设置 `API_HOST=0.0.0.0`。A40 重启时先等待旧 worker 退出、LMCache GPU IPC 映射释放，再启动新引擎。
+GLM 示例中的修复包须先按 [补丁说明](patches/lmcache-registration/README.md) 准备；镜像已包含等价修复时可省略该变量。默认 API 监听 `127.0.0.1`；对外提供服务时设置 `API_HOST=0.0.0.0`。A40 重启时先等待旧 worker 退出、LMCache GPU IPC 映射释放，再启动新引擎。
 
 ## 基准与诊断
 

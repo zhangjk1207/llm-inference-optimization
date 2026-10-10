@@ -21,10 +21,17 @@ class DeploymentArgumentsTests(unittest.TestCase):
         self.bin.mkdir()
         self.capture = self.directory / "commands.jsonl"
         mock = '''#!/usr/bin/env python3
-import json, os, signal, sys
+import json, os, signal, sys, time
 with open(os.environ['DEPLOY_TEST_CAPTURE'], 'a') as f:
     f.write(json.dumps(sys.argv[1:]) + '\\n')
 if 'lmcache.cli.main' in sys.argv:
+    if os.environ.get('DEPLOY_TEST_CACHE_EXIT'):
+        time.sleep(1)
+        sys.exit(7)
+    signal.pause()
+elif os.environ.get('DEPLOY_TEST_CACHE_EXIT'):
+    with open(os.environ['DEPLOY_TEST_ENGINE_PID'], 'w') as f:
+        f.write(str(os.getpid()))
     signal.pause()
 '''
         for name in ("docker", "apptainer"):
@@ -39,15 +46,15 @@ if 'lmcache.cli.main' in sys.argv:
             "MODEL": str(self.model), "CACHEDIR": str(self.directory / "cache"),
             "DEPLOY_TEST_CAPTURE": str(self.capture),
         }
-        for key in ("IMAGE", "APPTAINER", "PORT", "MAX_NUM_SEQS", "NCCL_P2P_DISABLE"):
+        for key in ("IMAGE", "APPTAINER", "PORT", "MAX_NUM_SEQS", "NCCL_P2P_DISABLE", "LMCACHE_PACKAGE", "DEPLOY_TEST_CACHE_EXIT", "DEPLOY_TEST_ENGINE_PID"):
             self.env.pop(key, None)
 
-    def run_script(self, name, **extra):
+    def run_script(self, name, expected_returncode=0, **extra):
         result = subprocess.run(
             ["bash", str(ROOT / "deployment" / name)], env={**self.env, **extra},
             capture_output=True, text=True, timeout=10,
         )
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, expected_returncode, result.stderr)
         return [json.loads(line) for line in self.capture.read_text().splitlines()]
 
     def test_dsv4_final_graph_and_p2p(self):
@@ -77,12 +84,20 @@ if 'lmcache.cli.main' in sys.argv:
     def test_glm_final_settings_and_cache_cleanup(self):
         image = self.directory / "tested image.sif"
         image.touch()
+        package = self.directory / "lmcache package"
+        package.mkdir()
+        (package / "__init__.py").touch()
         commands = self.run_script(
-            "start-glm53-final.sh", IMAGE=str(image),
+            "start-glm53-final.sh", expected_returncode=1, IMAGE=str(image),
             APPTAINER=str(self.bin / "apptainer"),
-            LOGDIR=str(self.directory / "logs"),
+            LOGDIR=str(self.directory / "logs"), LMCACHE_PACKAGE=str(package),
         )
         engine = next(args for args in commands if "/opt-patch/serve_custom_ar.py" in args)
+        for args in commands:
+            self.assertIn(str(package) + ":/usr/local/lib/python3.12/dist-packages/lmcache:ro", args)
+        self.assertEqual(engine[engine.index("--long-prefill-token-threshold") + 1], "1024")
+        self.assertEqual(engine[engine.index("--max-num-batched-tokens") + 1], "1152")
+        self.assertEqual(engine[engine.index("--max-model-len") + 1], "262144")
         self.assertIn("VLLM_FORCE_PCIE_CUSTOM_AR=1", engine)
         self.assertEqual(json.loads(engine[engine.index("--speculative-config") + 1])[
             "num_speculative_tokens"], 4)
@@ -90,6 +105,19 @@ if 'lmcache.cli.main' in sys.argv:
         self.assertEqual(config["max_cudagraph_capture_size"], 80)
         self.assertIn(5, config["cudagraph_capture_sizes"])
         self.assertIn(10, config["cudagraph_capture_sizes"])
+
+    def test_glm_cache_failure_stops_engine(self):
+        image = self.directory / "image.sif"
+        image.touch()
+        pidfile = self.directory / "engine.pid"
+        self.run_script(
+            "start-glm53-final.sh", expected_returncode=7,
+            IMAGE=str(image), APPTAINER=str(self.bin / "apptainer"),
+            LOGDIR=str(self.directory / "logs"),
+            DEPLOY_TEST_CACHE_EXIT="1", DEPLOY_TEST_ENGINE_PID=str(pidfile),
+        )
+        with self.assertRaises(ProcessLookupError):
+            os.kill(int(pidfile.read_text()), 0)
 
 
 if __name__ == "__main__":

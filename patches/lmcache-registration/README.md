@@ -2,6 +2,9 @@
 
 这是当前 vLLM backport v0.13.1 SM80 镜像内 LMCache 的 ZMQ/IPC 定向修复，不是任意 LMCache 版本通用补丁。相同镜像标签不保证包内容相同；修改文件的原始 SHA-256 见 `original-source-sha256.json`。
 
+> **上游追踪（2026-10-13）**：本修复的现场报告已发至 [LMCache#4715](https://github.com/LMCache/LMCache/issues/4715#issuecomment-6136695036)（同域根因另见 #4795），并与在途 PR #4593 / #4687 / #4732 协调向 `dev` 分支移植；本目录修复的探测与重注册部分（第 2–4 条）对应上游明确推迟的 follow-up。
+> Upstream: field report posted at [LMCache#4715](https://github.com/LMCache/LMCache/issues/4715#issuecomment-6136695036) (2026-10-13); the detection / re-registration part is being coordinated toward `dev` with in-flight PRs #4593 / #4687 / #4732.
+
 故障表现为 worker 注册在空闲期间过期，旧 PING 只能确认服务器活着，不能发现注册已经丢失。修复在注册 ACK 后立即启动心跳，通过 PING_REGISTERED 检测注册，失败时重新注册并重试，恢复期间复用 IPC 上下文，并串行化关闭与重新注册。
 
 `registration-liveness.patch` 是相对实测镜像原包的完整源码差异；`verify_registration.py` 是当时通过的 13 项针对性测试，需要镜像内完整依赖。gRPC 和其他传输模式未验证。原包及其原生动态库不随本仓库分发；适用的第三方许可继续有效。
